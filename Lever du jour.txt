@@ -1,0 +1,13 @@
+- Le meneur réveille tout le village
+Le meneur dit : “c’est le matin, le village se réveille, tout le monde se réveille et ouvre les yeux…”Le meneur désigne alors le ou les joueurs qui ont été victimes des Loups- Garous ou de la Sorcière durant la nuit.
+Ce ou ces joueurs révèlent leur carte car ils sont éliminés du jeu. Il ne pourront plus communiquer avec les autres joueurs de quelque manière que ce soit.
+Si un de ces joueurs est le Chasseur, il doit répliquer et éliminer immédiatement un autre joueur de son choix.
+Si un des joueurs est l’ Amoureux, l’autre Amoureux meurt de chagrin immédiatement.
+Si un des joueurs est Capitaine, il désigne son successeur.
+
+----------------------------------------------------------------------------------------------
+
+ - Conditions de Victoire
+Les Villageois gagnent dès qu’ils réussissent à éliminer le dernier Loup-Garou.
+Les Loups-Garous gagnent s’ils éliminent le dernier des Villageois.
+Cas particulier : Si les Amoureux sont 1 Loup-Garou + 1 Villageois, ils gagnent dès qu’ils ont éliminé tous les autres

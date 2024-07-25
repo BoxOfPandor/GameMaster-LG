@@ -1,0 +1,266 @@
+#!/bin/env python3
+
+import tkinter as tk
+from tkinter import messagebox, simpledialog
+
+class GameManager:
+    def __init__(self):
+        self.roles = [
+            "Loup-Garou", "Voyante", "Sorcière", "Chasseur", "Cupidon",
+            "Petite Fille", "Voleur", "Villageois", "Bouc Émissaire",
+            "Idiot du Village", "Ancien", "Salvateur", "Montreur d'Ours",
+            "Joueur de Flûte"
+        ]
+        self.moments = [
+            "Tombée de la nuit", "Nuit", "Lever du jour", "Journée", "Rôle",
+            "Notes"
+        ]
+        self.players = {}
+
+    def valider_selection(self, selected_roles):
+        roles_selectionnes = selected_roles
+
+        if not any(role.startswith("Loup") for role in roles_selectionnes):
+            nombre_loups = max(1, len(roles_selectionnes) // 3)
+            for _ in range(nombre_loups):
+                roles_selectionnes.append("Loup-Garou")
+
+        return roles_selectionnes
+
+    def ajouter_roles(self, role, nombre):
+        for _ in range(nombre):
+            self.roles.append(role)
+
+    def tuer_personnage(self, personnage):
+        joueur = simpledialog.askstring("Tuer Personnage", "Nom du joueur à tuer:")
+        if joueur:
+            self.players[joueur] = {'role': personnage, 'etat': 'mort'}
+            return joueur, personnage
+        return None, None
+
+    def vivre_personnage(self, personnage):
+        joueur = simpledialog.askstring("Vivre Personnage", "Nom du joueur à rendre vivant:")
+        if joueur:
+            self.players[joueur] = {'role': personnage, 'etat': 'vivant'}
+            return joueur, personnage
+        return None, None
+
+class LoupGarouApp:
+    def __init__(self, root):
+        self.root = root
+        self.game_manager = GameManager()
+
+        self.root.title("Gestionnaire de Partie - Loup-garou de Tiercelieux")
+        self.root.geometry("1280x720")
+
+        self.create_menu()
+        self.create_widgets()
+
+    def create_menu(self):
+        menu_bar = tk.Menu(self.root)
+
+        timer_menu = tk.Menu(menu_bar, tearoff=0)
+        timer_menu.add_command(label="1 minute", command=lambda: self.start_timer(1))
+        timer_menu.add_command(label="2 minutes", command=lambda: self.start_timer(2))
+        timer_menu.add_command(label="5 minutes", command=lambda: self.start_timer(5))
+        menu_bar.add_cascade(label="Minuteur", menu=timer_menu)
+
+        help_menu = tk.Menu(menu_bar, tearoff=0)
+        help_menu.add_command(label="À propos", command=self.afficher_a_propos)
+        menu_bar.add_cascade(label="Aide", menu=help_menu)
+
+        self.root.config(menu=menu_bar)
+
+    def start_timer(self, minutes):
+        timer_window = tk.Toplevel(self.root)
+        timer_window.title("Minuteur")
+        timer_window.geometry("200x150")
+
+        time_left = tk.StringVar(value=f"{minutes}:00")
+        label = tk.Label(timer_window, textvariable=time_left, font=("Helvetica", 24))
+        label.pack(expand=True)
+
+        is_paused = tk.BooleanVar(value=False)
+        countdown_id = None
+
+        def countdown(count):
+            nonlocal countdown_id
+            if not is_paused.get():
+                minutes, seconds = divmod(count, 60)
+                time_left.set(f"{minutes}:{seconds:02d}")
+                if count > 0:
+                    countdown_id = timer_window.after(1000, countdown, count - 1)
+                else:
+                    messagebox.showinfo("Temps écoulé", "Le temps est écoulé!")
+
+        def pause_resume():
+            if is_paused.get():
+                is_paused.set(False)
+                pause_button.config(text="Pause")
+                countdown(int(time_left.get().split(":")[0]) * 60 + int(time_left.get().split(":")[1]))
+            else:
+                is_paused.set(True)
+                pause_button.config(text="Relancer")
+                if countdown_id:
+                    timer_window.after_cancel(countdown_id)
+
+        def stop():
+            if countdown_id:
+                timer_window.after_cancel(countdown_id)
+            timer_window.destroy()
+
+        pause_button = tk.Button(timer_window, text="Pause", command=pause_resume)
+        pause_button.pack(side=tk.LEFT, padx=10, pady=10)
+
+        stop_button = tk.Button(timer_window, text="Stop", command=stop)
+        stop_button.pack(side=tk.RIGHT, padx=10, pady=10)
+
+        countdown(minutes * 60)
+
+    def create_widgets(self):
+        left_frame_border = tk.Frame(self.root, bg="white", bd=2, relief=tk.SOLID)
+        left_frame_border.pack(side=tk.LEFT, fill=tk.Y, padx=10, pady=10)
+
+        left_frame = tk.Frame(left_frame_border, bg="white")
+        left_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+
+        self.role_listbox = tk.Listbox(left_frame, selectmode=tk.MULTIPLE)
+        self.role_listbox.pack(fill=tk.BOTH, expand=True)
+        self.update_role_listbox()
+
+        self.valider_button = tk.Button(left_frame, text="Valider", command=self.valider_selection)
+        self.valider_button.pack(side=tk.BOTTOM, fill=tk.X)
+
+        self.selected_roles_listbox = tk.Listbox(left_frame)
+        self.selected_roles_listbox.pack_forget()
+
+        self.tuer_button = tk.Button(left_frame, text="Tuer", command=self.tuer_personnage)
+        self.tuer_button.pack_forget()
+
+        self.vivre_button = tk.Button(left_frame, text="Vivre", command=self.vivre_personnage)
+        self.vivre_button.pack_forget()
+
+        self.add_role_frame = tk.Frame(left_frame, bg="white")
+        self.add_role_frame.pack(pady=10)
+
+        self.role_var = tk.StringVar()
+        self.role_var.set("Loup-Garou")  # Valeur par défaut
+
+        self.role_dropdown = tk.OptionMenu(self.add_role_frame, self.role_var, *["Loup-Garou", "Villageois"])
+        self.role_dropdown.pack(side=tk.LEFT, padx=5)
+
+        self.add_role_entry = tk.Entry(self.add_role_frame, width=5)
+        self.add_role_entry.pack(side=tk.LEFT, padx=5)
+
+        self.add_role_button = tk.Button(self.add_role_frame, text="Ajouter", command=self.ajouter_role)
+        self.add_role_button.pack(side=tk.LEFT, padx=5)
+
+        center_frame = tk.Frame(self.root, bg="white", bd=2, relief=tk.SOLID)
+        center_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=10, pady=10)
+
+        self.infos_label = tk.Label(center_frame, text="Informations supplémentaires", bg="white")
+        self.infos_label.pack(padx=10, pady=10)
+
+        self.text_area = tk.Text(center_frame, wrap=tk.WORD, bg="white", height=20)
+        self.text_area.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+
+        right_frame_border = tk.Frame(self.root, bg="white", bd=2, relief=tk.SOLID)
+        right_frame_border.pack(side=tk.RIGHT, fill=tk.Y, padx=10, pady=10)
+
+        right_frame = tk.Frame(right_frame_border, bg="white")
+        right_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+
+        self.moment_var = tk.StringVar(value=self.game_manager.moments[0])
+
+        moment_label = tk.Label(right_frame, text="Page de Notes", bg="white")
+        moment_label.pack(pady=10)
+
+        for moment in self.game_manager.moments:
+            rb = tk.Radiobutton(right_frame, text=moment, variable=self.moment_var, value=moment, bg="white", command=self.load_moment_text)
+            rb.pack(anchor=tk.W)
+
+    def ajouter_role(self):
+        role = self.role_var.get()
+        try:
+            nombre = int(self.add_role_entry.get())
+            if nombre > 0:
+                self.game_manager.ajouter_roles(role, nombre)
+                messagebox.showinfo("Rôle ajouté", f"{nombre} {role}(s) ont été ajoutés.")
+                self.update_role_listbox()
+            else:
+                messagebox.showwarning("Nombre invalide", "Veuillez entrer un nombre positif.")
+        except ValueError:
+            messagebox.showwarning("Entrée invalide", "Veuillez entrer un nombre valide.")
+
+    def update_role_listbox(self):
+        self.role_listbox.delete(0, tk.END)
+        for index, role in enumerate(self.game_manager.roles):
+            self.role_listbox.insert(tk.END, role)
+            self.role_listbox.itemconfig(index, {'bg': '#f0f0f0' if index % 2 == 0 else '#e0e0e0'})
+
+    def valider_selection(self):
+        selection = self.role_listbox.curselection()
+        if selection:
+            selected_roles = [self.role_listbox.get(i) for i in selection]
+            roles_selectionnes = self.game_manager.valider_selection(selected_roles)
+
+            self.role_listbox.pack_forget()
+            self.valider_button.pack_forget()
+
+            self.selected_roles_listbox.pack(fill=tk.BOTH, expand=True)
+            for role in roles_selectionnes:
+                self.selected_roles_listbox.insert(tk.END, role)
+
+            self.tuer_button.pack(side=tk.LEFT, fill=tk.X)
+            self.vivre_button.pack(side=tk.RIGHT, fill=tk.X)
+        else:
+            messagebox.showwarning("Aucune sélection", "Veuillez sélectionner un rôle.")
+
+    def valider_moment(self):
+        moment_selectionne = self.moment_var.get()
+        messagebox.showinfo("Moment de la partie", f"Le moment de la partie est : {moment_selectionne}")
+
+    def load_moment_text(self):
+        moment_selectionne = self.moment_var.get()
+        try:
+            with open(f"{moment_selectionne}.txt", "r", encoding="utf-8") as file:
+                content = file.read()
+            self.text_area.delete("1.0", tk.END)
+            self.text_area.insert(tk.END, content)
+        except FileNotFoundError:
+            self.text_area.delete("1.0", tk.END)
+            self.text_area.insert(tk.END, f"Fichier {moment_selectionne}.txt introuvable.")
+
+    def tuer_personnage(self):
+        selection = self.selected_roles_listbox.curselection()
+        if selection:
+            personnage = self.selected_roles_listbox.get(selection[0])
+            joueur, personnage = self.game_manager.tuer_personnage(personnage)
+            if joueur:
+                messagebox.showinfo("Personnage tué", f"{personnage} ({joueur}) a été tué.")
+                self.selected_roles_listbox.itemconfig(selection[0], {'bg': 'red'})
+        else:
+            messagebox.showwarning("Aucune sélection", "Veuillez sélectionner un personnage.")
+
+    def vivre_personnage(self):
+        selection = self.selected_roles_listbox.curselection()
+        if selection:
+            personnage = self.selected_roles_listbox.get(selection[0])
+            joueur, personnage = self.game_manager.vivre_personnage(personnage)
+            if joueur:
+                messagebox.showinfo("Personnage vivant", f"{personnage} ({joueur}) est vivant.")
+                self.selected_roles_listbox.itemconfig(selection[0], {'bg': 'white'})
+        else:
+            messagebox.showwarning("Aucune sélection", "Veuillez sélectionner un personnage.")
+
+    def afficher_a_propos(self):
+        a_propos_fenetre = tk.Toplevel(self.root)
+        a_propos_fenetre.title("À propos")
+        a_propos_fenetre.geometry("400x200")
+        label = tk.Label(a_propos_fenetre, text="Gestionnaire de Partie - Loup-garou de Tiercelieux\nVersion 1.0\nDéveloppé par BoxOfPandor", padx=10, pady=10)
+        label.pack(expand=True)
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = LoupGarouApp(root)
+    root.mainloop()
